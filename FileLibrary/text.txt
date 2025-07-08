@@ -1,0 +1,12 @@
+This is the first paragraph. It has a few sentences.
+It talks about general ideas and ends with a complete thought.
+
+This is the second paragraph. It introduces another idea.
+It also spans multiple lines but is separated from the first by an empty line.
+
+Here's the third paragraph, which may include
+line breaks within the same paragraph, like this one.
+Yet it's still a single paragraph.
+
+Finally, this is the fourth paragraph.
+

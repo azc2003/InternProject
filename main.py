@@ -1,23 +1,24 @@
+from FileParser import FileParser
 from TextSearcher import TextSearcher
 from chatbot import ChatBot
-from pdfparser import PDFTextParser
+from promptBuilder import PromptBuilder
 from vectorizer import Vectorizer
 
 if __name__ == "__main__":
-    pdf_file = "manuel.pdf"
-    parser = PDFTextParser(pdf_file)
-    texts = parser.extract_blocks()
+    dir_name = "FileLibrary"
+    parser = FileParser(dir_name)
+    texts = parser.readDirectory()
 
-    searcher = TextSearcher(model_name="all-MiniLM-L6-v2")
+    searcher = TextSearcher()
     searcher.build_index(texts)
 
-    query = "Medical Device Interference"
-    results = searcher.search(query, k=3)
+    query = "List all files modified in July 2025."
+    results = searcher.search(query, k=5)
 
-    api_key = "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"
-    bot = ChatBot(api_key=api_key)
-    llm_prompt = results[0]["text"]
-    print(bot.ask(llm_prompt))
+    bot = ChatBot()
+    promptBuilder = PromptBuilder()
+    responsePrompt = promptBuilder.build_prompt(query,results)
+    print(bot.ask(responsePrompt))
 
 
 

@@ -2,7 +2,6 @@ from vectorizer import Vectorizer
 import numpy as np
 import faiss
 
-
 class TextSearcher:
     def __init__(self, model_name="all-MiniLM-L6-v2", normalize=True):
         self.vectorizer = Vectorizer(model_name=model_name, normalize=normalize)
@@ -12,38 +11,39 @@ class TextSearcher:
 
     def build_index(self, texts):
         self.texts = texts
-        self.embeddings = self.vectorizer.encode(texts)
-        # faiss需要是float32 type
+        PROMPT_PREFIX = "Represent this sentence for retrieval: "
+        vector_texts = []
+        for t in texts:
+            text = t.get("text", "").strip()
+            filename = t.get("filename", "")
+            modified_time = t.get("modified_time", "")
+            created_time = t.get("created_time", "")
+            vector_text = PROMPT_PREFIX +(
+                f"[filename: {filename}]\n"
+                f"[modified_time: {modified_time}]\n"
+                f"[created_time: {created_time}]\n"
+                f"{text}"
+            )
+            vector_texts.append(vector_text)
+        print(vector_texts)
+        self.embeddings = self.vectorizer.encode(vector_texts)
         self.embeddings = np.array(self.embeddings).astype("float32")
-
-        # 得到每个向量的大小 应该是1024
         dim = self.embeddings.shape[1]
-        # 让faiss知道向量dimension是1024 L2就是点间直线距离 这种搜索方法只适合小规模 flat是无压缩
         self.index = faiss.IndexFlatL2(dim)
-        # 将我们的向量加入到faiss
         self.index.add(self.embeddings)
 
-    def search(self, query_text, k=2):
+    def search(self, query_text, k):
         if self.index is None:
-            raise ValueError("先用 build_index(texts) 构建索引")
-
-        # 这是我们要查询的向量
-        query_vector = self.vectorizer.encode(query_text)
-        # 要求搜索是二维向量 （1，dim）
+            raise ValueError("Please build the index first with build_index(texts)")
+        PROMPT_PREFIX = "Represent this sentence for retrieval: "
+        query_vector = self.vectorizer.encode(PROMPT_PREFIX + query_text)
         query_vector = np.array(query_vector).reshape(1, -1).astype("float32")
 
-        # k=2 是找最相似的两个向量， Distance 二维数组L2距离 越小越相似 I 对应索引的Index
         D, I = self.index.search(query_vector, k)
         results = []
         for idx, dist in zip(I[0], D[0]):
-            results.append({
-                "index": idx,
-                "distance": float(dist),
-                "text": self.texts[idx]
-            })
-
-        print("Query:", query_text)
-        print("Top Results:")
-        for res in results:
-            print(f"- Index: {res['index']}, Distance: {res['distance']:.4f}, Text: {res['text']}")
+            meta = dict(self.texts[idx])
+            meta["distance"] = float(dist)
+            meta["index"] = idx
+            results.append(meta)
         return results
