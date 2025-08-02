@@ -25,7 +25,6 @@ class TextSearcher:
                 f"{text}"
             )
             vector_texts.append(vector_text)
-        print(vector_texts)
         self.embeddings = self.vectorizer.encode(vector_texts)
         self.embeddings = np.array(self.embeddings).astype("float32")
         dim = self.embeddings.shape[1]
